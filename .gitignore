@@ -1,0 +1,10 @@
+/Library/
+/Temp/
+/Obj/
+/Logs/
+/UserSettings/
+/Builds/
+/.vs/
+/Tests/bin/
+/Tests/obj/
+*.csproj.user

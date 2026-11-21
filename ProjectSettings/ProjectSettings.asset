@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!129 &1
+PlayerSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 27
+  productGUID: 4bdb3a1116ae4af0a2ee71c9cd3c11fb
+  companyName: Railrush
+  productName: RAILRUSH Unity
+  bundleVersion: 1.0.0
+  defaultScreenOrientation: 4
+  defaultScreenWidth: 1320
+  defaultScreenHeight: 720
+  defaultScreenWidthWeb: 1320
+  defaultScreenHeightWeb: 720
+  runInBackground: 0
+  resizableWindow: 1
+  fullscreenMode: 3
+  hideHomeButton: 1
+  renderOutsideSafeArea: 1
+  usePlayerLog: 1
+  allowedAutorotateToPortrait: 1
+  allowedAutorotateToPortraitUpsideDown: 0
+  allowedAutorotateToLandscapeRight: 1
+  allowedAutorotateToLandscapeLeft: 1
+  AndroidBundleVersionCode: 1
+  AndroidMinSdkVersion: 26
+  AndroidTargetSdkVersion: 0
+  AndroidPreferredInstallLocation: 1
+  m_ActiveColorSpace: 0
+  activeInputHandler: 0
+  applicationIdentifier:
+    Standalone: com.railrush.unity
+    Android: com.railrush.unity
