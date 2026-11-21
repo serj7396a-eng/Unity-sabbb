@@ -1,0 +1,22 @@
+RAILRUSH third-party assets
+
+Quaternius (CC0 1.0)
+Animated Men, Male Long Sleeve with its original animation clips: https://quaternius.com/packs/animatedmen.html
+Modular Train, High Speed Front, High Speed Wagon and Railway Track Straight: https://quaternius.com/packs/modulartrain.html
+Modular Streets, Streetlight Single and Sign No Parking: https://quaternius.com/packs/modularstreets.html
+FBX download mirror: https://github.com/beep2bleep/FreeAssetsByKenneyNLandQuaternius
+
+Kenney
+Platformer Kit, Fence and Fence Low (CC0): https://kenney.nl/assets/platformer-kit
+Interface Sounds, switch_004 and confirmation_002 (CC0): https://kenney.nl/assets/interface-sounds
+Interface Sounds download mirror: https://github.com/Calinou/kenney-interface-sounds
+Starter Kit City Builder, four small buildings and their shared color map (MIT): https://github.com/KenneyNL/Starter-Kit-City-Builder
+Starter Kit 3D Platformer, coin, color map, and coin, jump, break and land sounds (MIT): https://github.com/KenneyNL/Starter-Kit-3D-Platformer
+
+OpenGameArt (CC0 1.0)
+Magnet by Savino: https://opengameart.org/content/magnet
+Work Boots by Teh_Bucket: https://opengameart.org/content/hats-clothing-props
+Synthwave House Loop by Fupi: https://opengameart.org/content/synthwave-house-loop
+
+CC0 1.0 public domain dedication: https://creativecommons.org/publicdomain/zero/1.0/
+Models were adapted to Unity FBX where needed. The boots color texture was resized. MIT notices are included alongside this file.

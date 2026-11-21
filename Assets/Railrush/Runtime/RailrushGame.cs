@@ -39,7 +39,7 @@ namespace Railrush.Runtime
         private string screen = "menu";
         private int best, quality, lastDistrict = -1, finger = -1;
         private float accumulator, visualClock, cameraBank, verticalView, captionTime, hudClock, impact;
-        private float lastTap = -2;
+        private float lastTap = -2, touchStartedAt;
         private Vector3 cameraDamping;
         private Vector2 touchStart;
         private bool sound, consumedSwipe, swipeJumpHeld;
@@ -181,9 +181,16 @@ namespace Railrush.Runtime
             if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow)) run.Slide();
             if (Input.GetKeyDown(KeyCode.B) || Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift)) run.UseBoard();
             if (jumpPress) run.QueueJump(true);
-            if (!swipeJumpHeld && !Input.GetKey(KeyCode.Space) && !Input.GetKey(KeyCode.UpArrow) && !Input.GetKey(KeyCode.W))
-                run.ReleaseJump();
+            bool keyboardJumpHeld = Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.UpArrow) || Input.GetKey(KeyCode.W);
+            ReadSwipe();
+            if (!swipeJumpHeld && !keyboardJumpHeld) run.ReleaseJump();
+        }
 
+        private void ReadSwipe()
+        {
+            float now = Time.unscaledTime;
+            float threshold = Mathf.Clamp(Mathf.Min(Screen.width, Screen.height) * .028f, 12f, 30f);
+            bool foundFinger = false;
             for (int i = 0; i < Input.touchCount; i++)
             {
                 Touch touch = Input.GetTouch(i);
@@ -191,11 +198,12 @@ namespace Railrush.Runtime
                 {
                     finger = touch.fingerId;
                     touchStart = touch.position;
+                    touchStartedAt = now;
                     consumedSwipe = false;
                 }
                 if (touch.fingerId != finger) continue;
+                foundFinger = true;
                 Vector2 movement = touch.position - touchStart;
-                float threshold = Mathf.Max(19, Mathf.Min(Screen.width, Screen.height) * .053f);
                 if (touch.phase != TouchPhase.Canceled && movement.sqrMagnitude > threshold * threshold && !consumedSwipe)
                 {
                     consumedSwipe = true;
@@ -209,14 +217,9 @@ namespace Railrush.Runtime
                 }
                 if (touch.phase != TouchPhase.Ended && touch.phase != TouchPhase.Canceled) continue;
                 finger = -1;
-                if (swipeJumpHeld)
+                swipeJumpHeld = false;
+                if (touch.phase == TouchPhase.Ended && !consumedSwipe && now - touchStartedAt <= .25f)
                 {
-                    swipeJumpHeld = false;
-                    run.ReleaseJump();
-                }
-                if (touch.phase == TouchPhase.Ended && !consumedSwipe)
-                {
-                    float now = Time.unscaledTime;
                     if (now - lastTap < .30f)
                     {
                         run.UseBoard();
@@ -224,8 +227,12 @@ namespace Railrush.Runtime
                     }
                     else lastTap = now;
                 }
-                if (consumedSwipe) lastTap = -2;
+                else lastTap = -2;
             }
+            if (foundFinger || finger == -1) return;
+            finger = -1;
+            swipeJumpHeld = false;
+            lastTap = -2;
         }
 
         private void OnAction(string action)

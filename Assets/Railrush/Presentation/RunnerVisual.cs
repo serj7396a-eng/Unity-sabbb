@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Railrush.Content;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -68,6 +69,7 @@ namespace Railrush.Presentation
         private float flight;
         private float glide;
         private float impact;
+        private ImportedCourier courier;
 
         public void Build()
         {
@@ -93,6 +95,16 @@ namespace Railrush.Presentation
 
             BuildBoard();
             BuildThruster();
+            var candidate = gameObject.AddComponent<ImportedCourier>();
+            if (candidate.Build())
+            {
+                courier = candidate;
+                foreach (var renderer in rig.GetComponentsInChildren<Renderer>(true))
+                    if (!renderer.transform.IsChildOf(thruster) &&
+                        !renderer.transform.IsChildOf(boostBoots[0]) && !renderer.transform.IsChildOf(boostBoots[1]))
+                        renderer.enabled = false;
+            }
+            else Destroy(candidate);
             Pose(0f, 0f, 0f, 0f, false, false, false, false, false);
         }
 
@@ -101,6 +113,9 @@ namespace Railrush.Presentation
         {
             if (rig == null)
                 Build();
+
+            if (courier != null)
+                courier.Pose(time, speed, height, lateralVelocity, sliding, flying, boarding, crashed);
 
             float dt = Mathf.Clamp(time - lastTime, 0f, 0.075f);
             if (lastTime < 0f || time < lastTime)

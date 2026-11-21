@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Railrush.Content;
 using UnityEngine.Rendering;
 
 namespace Railrush.Props
@@ -386,11 +387,16 @@ namespace Railrush.Props
             GlyphBar(batch, acid, new Vector2(0.023f, 0.088f), new Vector2(-0.014f, 0.016f), -0.004f, 0.023f);
         }
 
-        private void BuildDouble(Batch batch)
+        private void BuildDouble(Batch batch) => BuildDouble(batch, true);
+
+        private void BuildDouble(Batch batch, bool originalBadge)
         {
             PickupRing(batch, violet);
-            batch.Add(arrowGem, violet, Vector3.zero, Vector3.one, Quaternion.identity);
-            batch.Add(arrowGem, blue, Vector3.zero, new Vector3(0.83f, 0.83f, 1.13f), Quaternion.identity);
+            if (originalBadge)
+            {
+                batch.Add(arrowGem, violet, Vector3.zero, Vector3.one, Quaternion.identity);
+                batch.Add(arrowGem, blue, Vector3.zero, new Vector3(0.83f, 0.83f, 1.13f), Quaternion.identity);
+            }
             for (var side = -1; side <= 1; side += 2)
             {
                 var z = side * 0.112f;
@@ -423,12 +429,75 @@ namespace Railrush.Props
             batch.Box(material, center.x, center.y, z, span.magnitude + width * 0.25f, width, 0.018f, tilt);
         }
 
+        private bool TryBuildImported(Transform parent, string kind, Batch batch)
+        {
+            switch (kind)
+            {
+                case "train":
+                case "ramp_train":
+                    var cars = new GameObject("Imported rolling stock");
+                    cars.transform.SetParent(parent, false);
+                    const float frontLength = 5.3f;
+                    if (!ImportedArt.Place(cars.transform, "TrainFront", new Vector3(2.1f, RoofHeight, frontLength - .025f),
+                            new Vector3(0, 0, frontLength * .5f), orientation: ImportedArt.Orientation.LongAxisForward) ||
+                        !ImportedArt.Place(cars.transform, "TrainWagon", new Vector3(2.1f, RoofHeight, TrainLength - frontLength - .025f),
+                            new Vector3(0, 0, (TrainLength + frontLength) * .5f), orientation: ImportedArt.Orientation.LongAxisForward))
+                    {
+                        cars.SetActive(false);
+                        Destroy(cars);
+                        return false;
+                    }
+                    foreach (int side in new[] {-1, 1})
+                    {
+                        batch.Box(teal, side * .72f, .87f, -.025f, .29f, .075f, .045f);
+                        batch.Box(glass, side * 1.059f, 2.12f, 5.08f, .021f, .045f, 9.6f);
+                    }
+                    if (kind == "ramp_train") BuildRamp(batch);
+                    return true;
+                case "hurdle":
+                    if (!ImportedArt.Place(parent, "Hurdle", new Vector3(2.04f, .62f, .29f), Vector3.zero))
+                        return false;
+                    batch.Box(amber, 0, .60f, -.16f, 2.06f, .044f, .045f);
+                    return true;
+                case "gate":
+                    if (!ImportedArt.Place(parent, "Gate", new Vector3(2.03f, 1.45f, .29f), new Vector3(0, 1.1f, 0)))
+                        return false;
+                    foreach (int side in new[] {-1, 1})
+                        batch.Box(steel, side * 1.03f, 1.22f, 0, .1f, 2.44f, .21f);
+                    batch.Box(coral, 0, 1.12f, -.16f, 2.07f, .055f, .055f);
+                    return true;
+                case "coin":
+                    return ImportedArt.Place(parent, "Coin", new Vector3(.53f, .53f, .105f), Vector3.zero, true,
+                        ImportedArt.Orientation.Upright);
+                case "double":
+                    if (!ImportedArt.Place(parent, "Coin", new Vector3(.57f, .57f, .12f), Vector3.zero, true,
+                            ImportedArt.Orientation.Upright))
+                        return false;
+                    batch.Box(violet, 0, 0, 0, .34f, .25f, .18f);
+                    BuildDouble(batch, false);
+                    return true;
+                case "boots":
+                    if (!ImportedArt.Place(parent, "Boots", new Vector3(.49f, .48f, .40f), Vector3.zero, true))
+                        return false;
+                    PickupRing(batch, acid);
+                    return true;
+                case "magnet":
+                    if (!ImportedArt.Place(parent, "Magnet", new Vector3(.49f, .44f, .26f), Vector3.zero, true,
+                            ImportedArt.Orientation.Upright))
+                        return false;
+                    PickupRing(batch, coral);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         private void AddTemplate(string kind, bool castShadows, Action<Batch> build)
         {
             var root = new GameObject(kind);
             root.transform.SetParent(templateRoot, false);
             var batch = new Batch(cube);
-            build(batch);
+            if (!TryBuildImported(root.transform, kind, batch)) build(batch);
             foreach (var pair in batch.Geometry)
             {
                 var mesh = new Mesh { name = kind + " / " + pair.Key.name };

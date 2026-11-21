@@ -68,10 +68,6 @@ namespace Railrush.Interface
             public Rect Primary;
             public Rect Secondary;
             public Rect Board;
-            public Rect Left;
-            public Rect Right;
-            public Rect Jump;
-            public Rect Slide;
             public Rect MainCard;
         }
 
@@ -154,10 +150,7 @@ namespace Railrush.Interface
             if (screen != Running)
                 return layout.Primary.Contains(pointer) || layout.Secondary.Contains(pointer);
 
-            return layout.Pause.Contains(pointer) || (layout.Touch &&
-                (layout.Board.Contains(pointer) || layout.Left.Contains(pointer) ||
-                 layout.Right.Contains(pointer) || layout.Jump.Contains(pointer) ||
-                 layout.Slide.Contains(pointer)));
+            return layout.Pause.Contains(pointer) || (layout.Touch && layout.Board.Contains(pointer));
         }
 
         private void Awake() => Build();
@@ -229,7 +222,7 @@ namespace Railrush.Interface
             if (safe.width <= 0 || safe.height <= 0)
                 safe = new Rect(0, 0, Mathf.Max(Screen.width, 1), Mathf.Max(Screen.height, 1));
 
-            bool touch = Application.isMobilePlatform || safe.height > safe.width;
+            bool touch = Application.isMobilePlatform || Input.touchSupported || safe.height > safe.width;
             float preferred = touch ? Mathf.Min(safe.width, safe.height) / 425f :
                 Mathf.Min(safe.width / 1280f, safe.height / 730f);
             float scale = Mathf.Clamp(preferred, 0.45f, 6f);
@@ -286,10 +279,6 @@ namespace Railrush.Interface
             float buttonSize = compact ? 53f : 55f;
             float touchBottom = height - margin - buttonSize;
             float boardWidth = compact ? 62f : 72f;
-            layout.Left = new Rect(margin, touchBottom, buttonSize, buttonSize);
-            layout.Right = new Rect(margin + buttonSize + 6f, touchBottom, buttonSize, buttonSize);
-            layout.Slide = new Rect(width - margin - buttonSize, touchBottom, buttonSize, buttonSize);
-            layout.Jump = new Rect(layout.Slide.x - buttonSize - 6f, touchBottom, buttonSize, buttonSize);
             layout.Board = new Rect((width - boardWidth) * 0.5f, touchBottom, boardWidth, buttonSize);
             return layout;
         }
@@ -351,9 +340,9 @@ namespace Railrush.Interface
             }
 
             Button(button, "НАЧАТЬ ЗАБЕГ", "start", Ink, true, 15);
-            if (!layout.Compact)
+            if (!layout.Compact || layout.Touch)
             {
-                string inputHint = layout.Touch ? "Свайпы или кнопки на экране" : "ENTER — старт   •   СТРЕЛКИ — движение   •   B — доска";
+                string inputHint = layout.Touch ? "Свайпы · Двойное касание — доска" : "ENTER — старт   •   СТРЕЛКИ — движение   •   B — доска";
                 Label(new Rect(x, button.yMax + 8f, Mathf.Min(550f, layout.Width - x), 25f), inputHint,
                     11, Muted, TextAnchor.MiddleLeft);
             }
@@ -368,7 +357,7 @@ namespace Railrush.Interface
             Tile(new Rect(first + 218f, y, 79, 52), "КМ/Ч", speedText, Cyan);
 
             if (layout.Compact)
-                Label(new Rect(14f, y + 56f, 124f, 18f), "РЕКОРД  " + bestText, 10, Muted,
+                Label(new Rect(first, y + 53f, 124f, 14f), "РЕКОРД  " + bestText, 10, Muted,
                     TextAnchor.MiddleLeft, FontStyle.Bold);
 
             if (!string.IsNullOrEmpty(powers))
@@ -384,10 +373,6 @@ namespace Railrush.Interface
 
             if (layout.Touch)
             {
-                Button(layout.Left, "‹", "left", White, false, 30);
-                Button(layout.Right, "›", "right", White, false, 30);
-                Button(layout.Jump, "↑", "jump", Cyan, false, 24);
-                Button(layout.Slide, "↓", "slide", Cyan, false, 24);
                 bool armed = stock > 0 && !powers.Contains("ДОСКА");
                 Button(layout.Board, boardText, "board", armed ? Pink : Muted, false, 17, armed);
             }

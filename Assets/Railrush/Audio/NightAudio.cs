@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Railrush.Content;
 
 namespace Railrush.Audio
 {
@@ -91,6 +92,7 @@ namespace Railrush.Audio
 
             built = true;
             music = CreateSource(true);
+            music.clip = Resources.Load<AudioClip>(ImportedArt.Root + "Audio/music");
             ambience = CreateSource(true);
             impactVoice = CreateSource(false);
             voices = new AudioSource[VoiceCount];
@@ -341,6 +343,13 @@ namespace Railrush.Audio
                 return existing;
             if (!Cues.TryGetValue(key, out Cue cue))
                 return null;
+            string asset = key == "combo" ? "coin" : key == "shield" ? "crash" : key;
+            var imported = Resources.Load<AudioClip>(ImportedArt.Root + "Audio/" + asset);
+            if (imported != null)
+            {
+                clips[key] = imported;
+                return imported;
+            }
 
             string name = key.ToLowerInvariant();
             int frames = Mathf.RoundToInt(cue.Length * CueRate);
@@ -543,11 +552,16 @@ namespace Railrush.Audio
             return (state >> 8) * (1f / 8388607.5f) - 1f;
         }
 
-        private static AudioClip CreateClip(string label, float[] pcm, int channels, int sampleRate)
+        private readonly HashSet<AudioClip> generatedClips = new();
+
+        private AudioClip CreateClip(string label, float[] pcm, int channels, int sampleRate)
         {
             AudioClip clip = AudioClip.Create(label, pcm.Length / channels, channels, sampleRate, false);
             if (clip.SetData(pcm, 0))
+            {
+                generatedClips.Add(clip);
                 return clip;
+            }
 
             Destroy(clip);
             return null;
@@ -558,11 +572,7 @@ namespace Railrush.Audio
             if (!built)
                 return;
 
-            if (music != null && music.clip != null)
-                Destroy(music.clip);
-            if (ambience != null && ambience.clip != null)
-                Destroy(ambience.clip);
-            foreach (AudioClip clip in clips.Values)
+            foreach (AudioClip clip in generatedClips)
                 if (clip != null)
                     Destroy(clip);
         }

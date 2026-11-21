@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Railrush.Content;
 using UnityEngine.Rendering;
 
 namespace Railrush.World
@@ -69,9 +70,12 @@ namespace Railrush.World
                 segment.transform.SetParent(transform, false);
                 segments[index] = segment.transform;
 
+                var imported = new GameObject("Imported district geometry").transform;
+                imported.SetParent(segment.transform, false);
                 var geometry = new Geometry();
-                BuildRailway(geometry);
-                BuildDistancedStreet(geometry, segment.transform, index);
+                BuildRailway(geometry, AddImportedRails(imported));
+                BuildDistancedStreet(geometry, segment.transform, imported, index);
+                StaticBatchingUtility.Combine(imported.gameObject);
                 AddMesh(segment.transform, geometry, "Batched district geometry");
             }
 
@@ -116,10 +120,30 @@ namespace Railrush.World
             }
         }
 
-        private void BuildRailway(Geometry geometry)
+        private static bool AddImportedRails(Transform parent)
+        {
+            var rails = new GameObject("Imported railway tracks");
+            rails.transform.SetParent(parent, false);
+            foreach (float lane in Lanes)
+            {
+                for (int section = 0; section < 2; section++)
+                {
+                    if (ImportedArt.Place(rails.transform, "Rail", new Vector3(1.96f, .145f, SegmentLength / 2),
+                        new Vector3(lane, .002f, (section + .5f) * SegmentLength / 2),
+                        orientation: ImportedArt.Orientation.LongAxisForward)) continue;
+                    rails.SetActive(false);
+                    Destroy(rails);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private void BuildRailway(Geometry geometry, bool importedRails)
         {
             geometry.Box(0f, -.26f, 18f, 15f, .33f, SegmentLength, Base);
             geometry.Box(0f, -.09f, 18f, 8.21f, .18f, SegmentLength, Base);
+            if (!importedRails)
             foreach (float lane in Lanes)
             {
                 for (int tie = 0; tie < 36; tie++)
@@ -155,7 +179,7 @@ namespace Railrush.World
             }
         }
 
-        private void BuildDistancedStreet(Geometry geometry, Transform segment, int index)
+        private void BuildDistancedStreet(Geometry geometry, Transform segment, Transform imported, int index)
         {
             int district = index / 2;
             var random = new System.Random(1641 + index * 39);
@@ -169,16 +193,28 @@ namespace Railrush.World
                     float depth = Between(random, 8.8f, 11.6f);
                     float height = Between(random, district == 2 ? 5.1f : 8.8f, district == 2 ? 12.4f : 21.5f);
                     float x = side * (7.66f + width * .5f + Between(random, 0f, 1.05f));
-                    MakeBuilding(geometry, random, district, side, x, z, width, depth, height);
+                    string asset = "Building" + (char)('A' + (district + block + (side > 0 ? 1 : 0)) % 4);
+                    bool place = block < 2 && ImportedArt.Place(imported, asset, new Vector3(width, height, depth),
+                        new Vector3(x, 0, z));
+                    if (!place) MakeBuilding(geometry, random, district, side, x, z, width, depth, height);
+                    else
+                    {
+                        float facade = x - side * (width * .5f + .018f);
+                        geometry.Box(facade, 3.7f, z, .05f, .065f, depth * .9f, side > 0 ? Cyan : accent);
+                        geometry.Box(facade - side * .018f, 2.1f, z - depth * .43f, .046f, 2.9f, .065f, accent);
+                    }
                 }
 
                 for (int marker = 0; marker < 3; marker++)
                 {
                     float z = 1.7f + marker * 12f;
-                    MakeLamp(geometry, side, z, side < 0 ? Violet : accent);
+                    if (marker != 1 || !ImportedArt.Place(imported, "Lamp", new Vector3(.8f, 4.5f, .68f),
+                            new Vector3(side * 5.15f, .22f, z)))
+                        MakeLamp(geometry, side, z, side < 0 ? Violet : accent);
                     MakeGuardRail(geometry, side, z + 3.6f);
                 }
                 MakeSign(geometry, segment, side, 11.2f, DistrictNames[district], accent);
+                ImportedArt.Place(imported, "Sign", new Vector3(.82f, 2.50f, .19f), new Vector3(side * 5.8f, .22f, 3.9f));
                 switch (district)
                 {
                     case 0:
