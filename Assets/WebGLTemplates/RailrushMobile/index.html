@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0920">
+  <title>RAILRUSH · Ночная смена</title>
+  <style>
+    :root { color-scheme: dark; color: #f5efff; background: #0a0920; font-family: system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; }
+    main, canvas { width: 100%; height: 100%; }
+    main { position: relative; height: 100dvh; }
+    canvas { display: block; touch-action: none; outline: none; background: #0a0920; }
+    .loading { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; gap: 16px;
+      padding: 24px; text-align: center; background: radial-gradient(ellipse at top, #283460, transparent 65%), #0a0920; }
+    h1 { margin: 0; font-size: clamp(2.6rem, 11vw, 5.5rem); font-weight: 900; font-style: italic; letter-spacing: -.07em; }
+    h1 span { color: #d7ff48; }
+    p { margin: 0; color: #d2c5e3; font-size: 1rem; }
+    progress { display: block; width: min(62vw, 270px); accent-color: #d7ff48; height: 8px; }
+    button { border: 0; border-radius: 8px; background: #d7ff48; color: #15172a; font: 800 1rem system-ui;
+      min-height: 48px; padding: 10px 22px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <main>
+    <canvas id="game" tabindex="-1" aria-label="Игровое поле RAILRUSH"></canvas>
+    <div class="loading" id="loading">
+      <h1>RAIL<span>RUSH</span></h1>
+      <p id="status" role="status">Загрузка игры</p>
+      <progress id="progress" max="1" value="0" aria-label="Загрузка"></progress>
+      <button id="retry" type="button" hidden>Повторить</button>
+    </div>
+  </main>
+  <script>
+    "use strict";
+    const canvas = document.getElementById("game");
+    const progress = document.getElementById("progress");
+    const statusText = document.getElementById("status");
+    const retry = document.getElementById("retry");
+
+    function fail(message) {
+      statusText.textContent = message;
+      progress.hidden = true;
+      retry.hidden = false;
+    }
+    retry.addEventListener("click", () => location.reload());
+    const loader = document.createElement("script");
+    loader.src = "Build/{{{ LOADER_FILENAME }}}";
+    loader.onerror = () => fail("Не удалось загрузить игру. Проверь подключение к интернету.");
+    loader.onload = () => {
+      const mobile = matchMedia("(pointer: coarse)").matches;
+      const config = {
+        dataUrl: "Build/{{{ DATA_FILENAME }}}",
+        frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+        codeUrl: "Build/{{{ CODE_FILENAME }}}",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "Railrush",
+        productName: "RAILRUSH",
+        productVersion: "1.0.0",
+        matchWebGLToCanvasSize: true,
+        devicePixelRatio: Math.min(window.devicePixelRatio || 1, mobile ? 1.6 : 2),
+      };
+      createUnityInstance(canvas, config, value => {
+        progress.value = value;
+        statusText.textContent = "Загрузка игры · " + Math.round(value * 100) + "%";
+      }).then(() => {
+        document.getElementById("loading").hidden = true;
+        canvas.focus({ preventScroll: true });
+      }).catch(error => {
+        console.error(error);
+        fail("Игра не запустилась. Попробуй открыть страницу в обновлённом Chrome или Safari.");
+      });
+    };
+    document.head.appendChild(loader);
+  </script>
+</body>
+</html>
