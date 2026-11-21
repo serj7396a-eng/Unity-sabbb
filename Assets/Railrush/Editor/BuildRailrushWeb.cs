@@ -23,11 +23,14 @@ namespace Railrush.Editor
             string root = Path.GetDirectoryName(Application.dataPath);
             string output = Path.Combine(root, "Builds", "RailrushWeb");
             string[] args = Environment.GetCommandLineArgs();
-            int overrideIndex = Array.IndexOf(args, "-railrushOutput");
+            string outputArgument = Array.IndexOf(args, "-railrushOutput") >= 0
+                ? "-railrushOutput"
+                : "-customBuildPath";
+            int overrideIndex = Array.IndexOf(args, outputArgument);
             if (overrideIndex >= 0)
             {
                 if (overrideIndex + 1 >= args.Length || args[overrideIndex + 1].StartsWith("-", StringComparison.Ordinal))
-                    throw new ArgumentException("-railrushOutput requires a directory.");
+                    throw new ArgumentException(outputArgument + " requires a directory.");
                 output = Path.GetFullPath(args[overrideIndex + 1]);
             }
             Directory.CreateDirectory(output);
@@ -50,7 +53,7 @@ namespace Railrush.Editor
 
                 if (report.summary.result != BuildResult.Succeeded)
                     throw new InvalidOperationException("Unity WebGL build failed: " + report.summary.result);
-                Debug.Log("RAILRUSH mobile WebGL published to build directory " + output);
+                Debug.Log("RAILRUSH mobile WebGL written to build directory " + output);
             }
             finally
             {

@@ -1,0 +1,136 @@
+name: Unity · Android and WebGL
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unity-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        target: [Android, WebGL]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Read Unity version
+        id: editor
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(awk '/^m_EditorVersion:/{print $2; exit}' ProjectSettings/ProjectVersion.txt)"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+f[0-9]+$ ]]; then
+            echo "::error::Cannot read a release Unity version from ProjectSettings/ProjectVersion.txt"
+            exit 1
+          fi
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+          printf 'owner=%s:%s\n' "$(id -u)" "$(id -g)" >> "$GITHUB_OUTPUT"
+
+      - name: Free disk space for the Unity image
+        shell: bash
+        run: |
+          sudo rm -rf -- /usr/local/lib/android /usr/share/swift /opt/ghc
+          df -h "$GITHUB_WORKSPACE"
+
+      - name: Cache Unity imports
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: unity-library-${{ runner.os }}-${{ steps.editor.outputs.version }}-${{ matrix.target }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: unity-library-${{ runner.os }}-${{ steps.editor.outputs.version }}-${{ matrix.target }}-
+
+      - name: Activate Unity Personal
+        uses: RageAgainstThePixel/activate-unity-license@v3
+        with:
+          license: personal
+          username: ${{ secrets.UNITY_USERNAME }}
+          password: ${{ secrets.UNITY_PASSWORD }}
+
+      - name: Pass the activated license to GameCI
+        id: license
+        shell: bash
+        run: |
+          set -euo pipefail
+          file="${XDG_DATA_HOME:-$HOME/.local/share}/unity3d/Unity/Unity_lic.ulf"
+          if [[ ! -s "$file" ]] || ! grep -q '<DeveloperData Value="' "$file"; then
+            echo "::error::Unity Personal activation did not produce a license file in the format GameCI v4 expects."
+            exit 1
+          fi
+          license="$(cat "$file")"
+          masked="${license//%/%25}"
+          masked="${masked//$'\r'/%0D}"
+          masked="${masked//$'\n'/%0A}"
+          printf '::add-mask::%s\n' "$masked"
+          delimiter="$(openssl rand -hex 16)"
+          printf 'value<<%s\n%s\n%s\n' "$delimiter" "$license" "$delimiter" >> "$GITHUB_OUTPUT"
+
+      - name: Build Unity player
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ steps.license.outputs.value }}
+          UNITY_EMAIL: ${{ secrets.UNITY_USERNAME }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: ${{ steps.editor.outputs.version }}
+          containerRegistryImageVersion: '4'
+          targetPlatform: ${{ matrix.target }}
+          buildsPath: build
+          buildName: RAILRUSH
+          buildMethod: ${{ matrix.target == 'WebGL' && 'Railrush.Editor.BuildRailrushWeb.Build' || '' }}
+          versioning: None
+          androidExportType: androidPackage
+          androidVersionCode: ${{ github.run_number }}
+          androidTargetSdkVersion: ${{ matrix.target == 'Android' && 'AndroidApiLevel36' || '' }}
+          chownFilesTo: ${{ steps.editor.outputs.owner }}
+
+      - name: Upload Android APK
+        if: matrix.target == 'Android'
+        uses: actions/upload-artifact@v4
+        with:
+          name: RAILRUSH-Android-APK
+          path: build/Android/RAILRUSH.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Check the WebGL build
+        if: matrix.target == 'WebGL'
+        shell: bash
+        run: |
+          test -s build/WebGL/RAILRUSH/index.html
+          test -n "$(find build/WebGL/RAILRUSH/Build -maxdepth 1 -name '*.loader.js' -print -quit)"
+
+      - name: Upload GitHub Pages files
+        if: matrix.target == 'WebGL' && github.ref_name == github.event.repository.default_branch
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/WebGL/RAILRUSH
+
+  pages:
+    name: Publish WebGL to Pages
+    if: github.ref_name == github.event.repository.default_branch
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy WebGL
+        id: deployment
+        uses: actions/deploy-pages@v4

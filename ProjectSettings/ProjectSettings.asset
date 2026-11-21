@@ -25,10 +25,13 @@ PlayerSettings:
   allowedAutorotateToLandscapeLeft: 1
   AndroidBundleVersionCode: 1
   AndroidMinSdkVersion: 26
-  AndroidTargetSdkVersion: 0
+  AndroidTargetSdkVersion: 36
+  AndroidTargetArchitectures: 2
   AndroidPreferredInstallLocation: 1
   m_ActiveColorSpace: 0
   activeInputHandler: 0
+  scriptingBackend:
+    Android: 1
   applicationIdentifier:
     Standalone: com.railrush.unity
     Android: com.railrush.unity

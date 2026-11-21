@@ -29,3 +29,12 @@
 Команда **RAILRUSH → Build mobile WebGL** создаёт папку `Builds/RailrushWeb` в активированном Unity Editor с установленным модулем Web Build Support. Стартовая страница рассчитана на полноэкранное управление касаниями и ограничивает разрешение рендера на телефоне. Для публикации нужен статический HTTPS-хостинг.
 
 Для автоматизированной сборки предусмотрен метод `Railrush.Editor.BuildRailrushWeb.Build`. Он принимает дополнительный аргумент `-railrushOutput` с путём папки сборки.
+
+## Сборка в GitHub Actions с телефона
+
+1. Загрузите содержимое проекта в корень репозитория в ветку `main`.
+2. В браузере откройте **Settings → Secrets and variables → Actions → New repository secret**. Добавьте `UNITY_USERNAME` с почтой Unity ID и `UNITY_PASSWORD` с паролем Unity ID. Файл лицензии получают внутри задания и передают в GameCI.
+3. В **Settings → Pages → Build and deployment → Source** выберите **GitHub Actions**. Для публичных репозиториев Pages доступен на GitHub Free.
+4. Откройте **Actions → Unity · Android and WebGL → Run workflow**. В завершённом запуске APK находится в **Artifacts → RAILRUSH-Android-APK**. Ссылка на игру появится в задании **Publish WebGL to Pages** после публикации.
+
+Workflow читает Unity из `ProjectVersion.txt`. Для версии `6000.3.29f1` используются Linux-образы `unityci/editor:ubuntu-6000.3.29f1-android-4` и `unityci/editor:ubuntu-6000.3.29f1-webgl-4`. APK — сборка для установки и тестирования на ARM64, подписанная отладочным ключом Unity.
